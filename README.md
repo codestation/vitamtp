@@ -25,7 +25,7 @@ testers is requested.
 
 ## How do I use/test libvitamtp?
 
-Issues Page: https://github.com/yifanlu/VitaMTP/issues
+Issues Page: https://github.com/codestation/vitamtp/issues
 
 First try to compile it using the directions in INSTALL, if the process fails 
 post the output into the GitHub issues page.
