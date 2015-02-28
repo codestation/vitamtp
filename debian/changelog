@@ -1,3 +1,9 @@
+vitamtp (2.5.6) unstable; urgency=low
+
+  * Use SO_REUSEADDR for initial bind() function.
+
+ -- codestation <codestation404@gmail.com>  Sat, 28 Feb 2015 00:00:00 -0000
+
 vitamtp (2.5.5) unstable; urgency=low
 
   * Add pre 2.00 protocol versions.
