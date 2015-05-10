@@ -131,7 +131,11 @@ uint16_t VitaMTP_GetBrowseInfo(vita_device_t *device, uint32_t event_id, browse_
 {
     unsigned char *data = NULL;
     uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_GetBrowseInfo, &data, NULL);
-    memcpy(info, data, sizeof(browse_info_t));
+    info->ohfiParent = le32atoh(data);
+    info->unk1 = le32atoh(data+4);
+    info->index = le32atoh(data+8);
+    info->numObjects = le32atoh(data+12);
+    info->unk4 = le32atoh(data+16);
     free(data);
     return ret;
 }
@@ -180,7 +184,7 @@ uint16_t VitaMTP_SendObjectThumb(vita_device_t *device, uint32_t event_id, metad
     long new_length = len + sizeof(uint64_t) + thumb_len;
     char *new_data = malloc(new_length);
     memcpy(new_data, data, len);
-    memcpy(new_data + len, &thumb_len, sizeof(uint64_t));
+    htole64a(new_data + len, thumb_len);
     memcpy(new_data + len + sizeof(uint64_t), thumb_data, thumb_len);
     free(data);
 
@@ -289,9 +293,9 @@ uint16_t VitaMTP_GetUrl(vita_device_t *device, uint32_t event_id, char **url)
         return ret;
     }
 
-    int url_len = ((int *)data)[2]; // TODO: Figure out what data[0], data[1] are. They are always zero.
+    int url_len = le32atoh((uint8_t *)(data+8)); // TODO: Figure out what data[0], data[1] are. They are always zero.
     *url = malloc(url_len);
-    memcpy(*url, &((int *)data)[3], url_len);
+    memcpy(*url, data+12, url_len);
     return ret;
 }
 
@@ -308,7 +312,7 @@ uint16_t VitaMTP_GetUrl(vita_device_t *device, uint32_t event_id, char **url)
 uint16_t VitaMTP_SendHttpObjectFromURL(vita_device_t *device, uint32_t event_id, void *data, unsigned int len)
 {
     unsigned char *buffer = malloc(len + sizeof(uint64_t));
-    *(uint64_t *)buffer = len;
+    htole64a(buffer, len);
     memcpy(buffer + sizeof(uint64_t), data, len);
     uint16_t ret = VitaMTP_SendData(device, event_id, PTP_OC_VITA_SendHttpObjectFromURL, buffer, len + sizeof(uint64_t));
     free(buffer);
@@ -375,7 +379,7 @@ uint16_t VitaMTP_GetSettingInfo(vita_device_t *device, uint32_t event_id, settin
  */
 uint16_t VitaMTP_SendObjectStatus(vita_device_t *device, uint32_t event_id, object_status_t *status)
 {
-    int *data;
+    uint32_t *data;
     uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_SendObjectStatus, (unsigned char **)&data, NULL);
 
     if (ret != PTP_RC_OK)
@@ -383,8 +387,8 @@ uint16_t VitaMTP_SendObjectStatus(vita_device_t *device, uint32_t event_id, obje
         return ret;
     }
 
-    status->ohfiRoot = data[0];
-    status->len = data[1];
+    status->ohfiRoot = le32toh(data[0]);
+    status->len = le32toh(data[1]);
     status->title = malloc(status->len);
     memcpy(status->title, (char *)&data[2], status->len);
     free(data);
@@ -401,9 +405,10 @@ uint16_t VitaMTP_SendObjectStatus(vita_device_t *device, uint32_t event_id, obje
  */
 uint16_t VitaMTP_SendHttpObjectPropFromURL(vita_device_t *device, uint32_t event_id, http_object_prop_t *prop)
 {
-    int header_len = sizeof(http_object_prop_t) - sizeof(char *);
+    int header_len = sizeof(uint64_t) + sizeof(uint8_t);
     unsigned char *data = malloc(header_len + prop->timestamp_len);
-    memcpy(data, prop, header_len);
+    htole64a(data, prop->size);
+    *(data + sizeof(uint64_t)) = prop->timestamp_len;
     memcpy(data + header_len, prop->timestamp, prop->timestamp_len);
     int ret = VitaMTP_SendData(device, event_id, PTP_OC_VITA_SendHttpObjectPropFromURL, data,
                                header_len + prop->timestamp_len);
@@ -450,7 +455,9 @@ uint16_t VitaMTP_SendPartOfObjectInit(vita_device_t *device, uint32_t event_id, 
         return ret;
     }
 
-    memcpy(init, data, sizeof(send_part_init_t));
+    init->ohfi = le32atoh(data);
+    init->offset = le64atoh(data+4);
+    init->size = le64atoh(data+12);
     free(data);
     return ret;
 }
@@ -473,7 +480,7 @@ uint16_t VitaMTP_SendPartOfObject(vita_device_t *device, uint32_t event_id, unsi
     unsigned char *data;
     unsigned long len = object_len + sizeof(uint64_t);
     data = malloc(len);
-    ((uint64_t *)data)[0] = object_len;
+    htole64a(data, object_len);
     memcpy(data + sizeof(uint64_t), object_data, object_len);
 
     uint16_t ret = VitaMTP_SendData(device, event_id, PTP_OC_VITA_SendPartOfObject, data,
@@ -495,10 +502,10 @@ uint16_t VitaMTP_OperateObject(vita_device_t *device, uint32_t event_id, operate
     uint32_t len = 0;
     uint32_t *data = NULL;
     uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_OperateObject, (unsigned char **)&data, &len);
-    op_object->cmd = data[0];
-    op_object->ohfi = data[1];
-    op_object->unk1 = data[2];
-    op_object->len = data[3];
+    op_object->cmd = le32toh(data[0]);
+    op_object->ohfi = le32toh(data[1]);
+    op_object->unk1 = le32toh(data[2]);
+    op_object->len = le32toh(data[3]);
     op_object->title = (char *)malloc(op_object->len+1);
     memcpy(op_object->title, (char *)&data[4], op_object->len+1);
     free(data);
@@ -518,7 +525,9 @@ uint16_t VitaMTP_GetPartOfObject(vita_device_t *device, uint32_t event_id, send_
 {
     unsigned char *_data = NULL;
     uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_GetPartOfObject, (unsigned char **)&_data, NULL);
-    memcpy(init, _data, sizeof(send_part_init_t));
+    init->ohfi = le32atoh(_data);
+    init->offset = le64atoh(_data + 4);
+    init->size = le64atoh(_data + 12);
     *data = malloc(init->size);
     memcpy(*data, _data + sizeof(send_part_init_t), init->size);
     free(_data);
@@ -541,8 +550,8 @@ uint16_t VitaMTP_SendStorageSize(vita_device_t *device, uint32_t event_id, uint6
     static const int len = 25;
     uint16_t ret;
     unsigned char *data = malloc(len);
-    ((uint64_t *)data)[0] = storage_size;
-    ((uint64_t *)data)[1] = available_size;
+    htole64a(data, storage_size);
+    htole64a(data+8, available_size);
     memcpy(&((uint64_t *)data)[2], padding, sizeof(padding));
     ret = VitaMTP_SendData(device, event_id, PTP_OC_VITA_SendStorageSize, data, len);
     free(data);
@@ -563,7 +572,9 @@ uint16_t VitaMTP_GetTreatObject(vita_device_t *device, uint32_t event_id, treat_
 {
     unsigned char *data = NULL;
     uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_GetTreatObject, &data, NULL);
-    memcpy(treat, data, sizeof(treat_object_t));
+    treat->ohfiParent = le32atoh(data);
+    treat->unk0 = le32atoh(data+4);
+    treat->handle = le32atoh(data+8);
     free(data);
     return ret;
 }
@@ -581,7 +592,13 @@ uint16_t VitaMTP_GetTreatObject(vita_device_t *device, uint32_t event_id, treat_
 uint16_t VitaMTP_SendCopyConfirmationInfoInit(vita_device_t *device, uint32_t event_id,
         copy_confirmation_info_t **p_info)
 {
-    return VitaMTP_GetData(device, event_id, PTP_OC_VITA_SendCopyConfirmationInfoInit, (unsigned char **)p_info, NULL);
+    unsigned char *data = NULL;
+    uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_SendCopyConfirmationInfoInit, (unsigned char **)p_info, NULL);
+    LE32TOH((*p_info)->count);
+    uint32_t i;
+    for (i=0; i<(*p_info)->count; i++)
+        LE32TOH((*p_info)->ohfi[i]);
+    return ret;
 }
 
 /**
@@ -598,10 +615,13 @@ uint16_t VitaMTP_SendCopyConfirmationInfo(vita_device_t *device, uint32_t event_
 {
     uint16_t ret;
     int info_size = info->count * sizeof(uint32_t) + sizeof(uint32_t);
-    uint64_t *data = malloc(info_size + sizeof(uint64_t));
-    data[0] = size;
-    memcpy(&data[1], info, info_size);
-    ret = VitaMTP_SendData(device, event_id, PTP_OC_VITA_SendCopyConfirmationInfo, (unsigned char *)data,
+    unsigned char *data = malloc(info_size + sizeof(uint64_t));
+    htole64a(data, size);
+    htole32a(data+8, info->count);
+    uint32_t i;
+    for (i=0; i<info->count; i++)
+        htole32a(data+12+i*sizeof(uint32_t), info->ohfi[i]);
+    ret = VitaMTP_SendData(device, event_id, PTP_OC_VITA_SendCopyConfirmationInfo, data,
                            info_size + sizeof(uint64_t));
     free(data);
     return ret;
@@ -620,15 +640,16 @@ uint16_t VitaMTP_SendCopyConfirmationInfo(vita_device_t *device, uint32_t event_
  */
 uint16_t VitaMTP_SendObjectMetadataItems(vita_device_t *device, uint32_t event_id, uint32_t *ohfi)
 {
-    uint32_t *p_ohfi;
-    uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_SendObjectMetadataItems, (unsigned char **)&p_ohfi, NULL);
+    unsigned char *p_ohfi;
+    uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_SendObjectMetadataItems, &p_ohfi, NULL);
 
     if (ret != PTP_RC_OK)
     {
         return ret;
     }
 
-    *ohfi = *p_ohfi;
+    *ohfi = le32atoh(p_ohfi);
+    free(p_ohfi);
     return ret;
 }
 
