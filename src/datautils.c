@@ -33,6 +33,8 @@
 #include "asprintf.h"
 #endif
 
+#include "gphoto2-endian.h"
+
 extern int g_VitaMTP_logmask;
 
 /**
@@ -49,7 +51,7 @@ char *VitaMTP_Data_Add_Size_Header(const char *orig, uint32_t len)
     char *new_data;
     int tot_len = len + sizeof(uint32_t); // room for header
     new_data = malloc(tot_len);
-    memcpy(new_data, &len, sizeof(uint32_t)); // copy header
+    htole32a(new_data, len); // copy header
     memcpy(new_data + sizeof(uint32_t), orig, len);
     return new_data;
 }
