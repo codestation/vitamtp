@@ -1,0 +1,45 @@
+_realname=vitamtp
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=v2.5.9.0.g7ab537a
+pkgrel=1
+pkgdesc="Library to interact with Vita's USB MTP protocol"
+arch=(any)
+url="https://github.com/codestation/vitamtp"
+license=("GPL")
+makedepends=(${MINGW_PACKAGE_PREFIX}-libtool ${MINGW_PACKAGE_PREFIX}-gettext)
+depends=(${MINGW_PACKAGE_PREFIX}-crt ${MINGW_PACKAGE_PREFIX}-libusb ${MINGW_PACKAGE_PREFIX}-libxml2)
+options=(strip staticlibs)
+source=("git+https://github.com/codestation/vitamtp.git#branch=testing")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd vitamtp
+  echo "$(git describe --long --tags | tr - .)"
+}
+
+prepare() {
+  cd "${srcdir}/${_realname}"
+  sh autogen.sh
+}
+
+build() {
+  export ac_cv_func_realloc_0_nonnull=yes
+  export ac_cv_func_malloc_0_nonnull=yes
+
+  [[ -d ${srcdir}/build-${MINGW_CHOST} ]] && rm -rf ${srcdir}/build-${MINGW_CHOST}
+  mkdir -p ${srcdir}/build-${MINGW_CHOST} && cd ${srcdir}/build-${MINGW_CHOST}
+  ../${_realname}/configure \
+    --host=${MINGW_CHOST} \
+    --target=${MINGW_CHOST} \
+    --build=${MINGW_CHOST} \
+    --prefix=${MINGW_PREFIX} \
+    --libexecdir=${MINGW_PREFIX}/lib
+
+  make
+}
+
+package() {
+  cd ${srcdir}/build-${MINGW_CHOST}
+  make DESTDIR="${pkgdir}" install
+}
