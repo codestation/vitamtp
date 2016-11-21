@@ -29,7 +29,6 @@ License:        GPL-3.0
 Group:          System/Libraries
 URL:            https://github.com/codestation/vitamtp
 Source:         https://github.com/codestation/vitamtp/archive/%{_verprefix}/vitamtp-%{_version}.tar.gz
-Requires(pre):  shadow-utils
 BuildRequires:  %{_pkgconfig}
 BuildRequires:  libxml2-devel
 BuildRequires:  %{_libusb}
