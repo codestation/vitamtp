@@ -1,13 +1,13 @@
 Source: vitamtp
 Priority: optional
 Maintainer: codestation <codestation404@gmail.com>
-Standards-Version: 3.9.6
+Standards-Version: 4.6.2
 Section: libs
 Homepage: https://github.com/codestation/vitamtp
 Vcs-Git: git://github.com/codestation/vitamtp.git
 Vcs-Browser: https://github.com/codestation/vitamtp
 Build-Depends:
- debhelper (>= 9),
+ debhelper-compat (= 13),
  dh-autoreconf,
  autotools-dev,
  automake,
