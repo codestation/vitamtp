@@ -87,7 +87,14 @@ uint16_t VitaMTP_GetVitaInfo(vita_device_t *device, vita_info_t *info)
         return ret;
     }
 
-    if (VitaMTP_Data_Info_From_XML(info, (char *)data+sizeof(uint32_t), len-sizeof(uint32_t)) != 0) // strip header
+    size_t xml_len;
+    void *nulpos = memchr((char *)data+sizeof(uint32_t), '\0', len-sizeof(uint32_t));
+    if (nulpos)
+        xml_len = (char *)nulpos - ((char *)data+sizeof(uint32_t));
+    else
+        xml_len = len-sizeof(uint32_t);
+
+    if (VitaMTP_Data_Info_From_XML(info, (char *)data+sizeof(uint32_t), xml_len) != 0) // strip header
     {
         return PTP_RC_GeneralError;
     }
@@ -358,7 +365,14 @@ uint16_t VitaMTP_GetSettingInfo(vita_device_t *device, uint32_t event_id, settin
         return ret;
     }
 
-    if (VitaMTP_Data_Settings_From_XML(p_info, (char *)data+sizeof(uint32_t), len-sizeof(uint32_t)) != 0) // strip header
+    size_t xml_len;
+    void *nulpos = memchr((char *)data+sizeof(uint32_t), '\0', len-sizeof(uint32_t));
+    if (nulpos)
+        xml_len = (char *)nulpos - ((char *)data+sizeof(uint32_t));
+    else
+        xml_len = len-sizeof(uint32_t);
+
+    if (VitaMTP_Data_Settings_From_XML(p_info, (char *)data+sizeof(uint32_t), xml_len) != 0) // strip header
     {
         return PTP_RC_GeneralError;
     }
