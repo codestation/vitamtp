@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.52])
-AC_INIT([vitamtp], [2.5.9], [codestation@gmail.com])
+AC_INIT([vitamtp], [2.5.10], [codestation@megpoid.dev])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/vitamtp.c])

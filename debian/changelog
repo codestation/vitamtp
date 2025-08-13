@@ -1,3 +1,9 @@
+vitamtp (2.5.10) unstable; urgency=low
+
+  * buffer to parse must exclude the null termination byte
+
+ -- codestation <codestation@megpoid.dev>  Wed, 13 Aug 2025 22:00:00 -0000
+
 vitamtp (2.5.9) unstable; urgency=low
 
   * fix: prevent buffer overflow by custom version strings.

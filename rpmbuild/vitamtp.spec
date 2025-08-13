@@ -2,7 +2,7 @@
 # vitamtp spec file
 # 
 
-%define _version 2.5.9
+%define _version 2.5.10
 
 %if "%{_version}" == "testing" || "%{_version}" == "master"
 %define _verprefix %{_version}
