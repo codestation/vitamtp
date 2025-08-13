@@ -87,7 +87,16 @@ uint16_t VitaMTP_GetVitaInfo(vita_device_t *device, vita_info_t *info)
         return ret;
     }
 
-    if (VitaMTP_Data_Info_From_XML(info, (char *)data+sizeof(uint32_t), len-sizeof(uint32_t)) != 0) // strip header
+    // remove 32-bit header from buffer
+    unsigned int   header_size = sizeof(uint32_t);
+    unsigned char* headerless_data = data + header_size; 
+    unsigned int   headerless_len = len - header_size;
+
+    // seek in buffer and adjust payload length to exclude null terminator byte
+    unsigned char* nulpos = (unsigned char*) memchr(headerless_data, '\0', headerless_len);
+    unsigned int xml_len = nulpos ? nulpos - headerless_data : headerless_len;
+
+    if (VitaMTP_Data_Info_From_XML(info, headerless_data, xml_len) != 0)
     {
         return PTP_RC_GeneralError;
     }
@@ -358,7 +367,16 @@ uint16_t VitaMTP_GetSettingInfo(vita_device_t *device, uint32_t event_id, settin
         return ret;
     }
 
-    if (VitaMTP_Data_Settings_From_XML(p_info, (char *)data+sizeof(uint32_t), len-sizeof(uint32_t)) != 0) // strip header
+    // remove 32-bit header from buffer
+    unsigned int   header_size = sizeof(uint32_t);
+    unsigned char* headerless_data = data + header_size; 
+    unsigned int   headerless_len = len - header_size;
+    
+    // seek in buffer and adjust payload length to exclude null terminator byte
+    unsigned char* nulpos = (unsigned char*) memchr(headerless_data, '\0', headerless_len);
+    unsigned int xml_len = nulpos ? nulpos - headerless_data : headerless_len;
+    
+    if (VitaMTP_Data_Settings_From_XML(p_info, headerless_data, xml_len) != 0)
     {
         return PTP_RC_GeneralError;
     }
@@ -1035,7 +1053,16 @@ uint16_t VitaMTP_GetVitaCapabilityInfo(vita_device_t *device, capability_info_t 
         return ret;
     }
 
-    if (VitaMTP_Data_Capability_From_XML(p_info, (char *)data+sizeof(uint32_t), len-sizeof(uint32_t)) != 0) // strip header
+    // remove 32-bit header from buffer
+    unsigned int   header_size = sizeof(uint32_t);
+    unsigned char* headerless_data = data + header_size; 
+    unsigned int   headerless_len = len - header_size;
+
+    // seek in buffer and adjust payload length to exclude null terminator byte
+    unsigned char* nulpos = (unsigned char*) memchr(headerless_data, '\0', headerless_len);
+    unsigned int xml_len = nulpos ? nulpos - headerless_data : headerless_len;
+
+    if (VitaMTP_Data_Capability_From_XML(p_info, headerless_data, xml_len) != 0) // strip header
     {
         return PTP_RC_GeneralError;
     }
