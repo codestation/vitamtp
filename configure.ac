@@ -15,6 +15,8 @@ AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AM_ICONV
 PKG_PROG_PKG_CONFIG
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.24])
 
 # Check for mingw compiler platform
 AC_MSG_CHECKING([For MinGW32])
