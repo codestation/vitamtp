@@ -1,3 +1,10 @@
+vitamtp (2.5.11) unstable; urgency=medium
+
+  * Refresh RPM, Debian, Flatpak and AppImage packaging.
+  * Make the autotools bootstrap fail reliably on errors.
+
+ -- codestation <codestation@megpoid.dev>  Sat, 29 Aug 2026 14:30:00 -0500
+
 vitamtp (2.5.10) unstable; urgency=low
 
   * buffer to parse must exclude the null termination byte

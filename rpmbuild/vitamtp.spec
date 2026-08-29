@@ -2,7 +2,7 @@
 # vitamtp spec file
 # 
 
-%define _version 2.5.10
+%define _version 2.5.11
 
 %if "%{_version}" == "testing" || "%{_version}" == "master"
 %define _verprefix %{_version}
@@ -14,10 +14,12 @@
 %define _pkgconfig pkgconfig
 %define _libusb libusbx-devel
 %define _gettext gettext-devel
+%define _shadow shadow-utils
 %else
 %define _pkgconfig pkg-config
 %define _libusb libusb-1_0-devel
 %define _gettext gettext-tools
+%define _shadow shadow
 %endif
 
 Name:           libvitamtp
@@ -25,11 +27,11 @@ Version:        %{_version}
 Release:        0
 %define sonum   5
 Summary:        Low-level Vita communication library
-License:        GPL-3.0
+License:        GPL-3.0-or-later
 Group:          System/Libraries
 URL:            https://github.com/codestation/vitamtp
 Source:         https://github.com/codestation/vitamtp/archive/%{_verprefix}/vitamtp-%{_version}.tar.gz
-Requires(pre):  shadow-utils
+Requires(pre):  %{_shadow}
 BuildRequires:  %{_pkgconfig}
 BuildRequires:  libxml2-devel
 BuildRequires:  %{_libusb}
@@ -67,31 +69,34 @@ the MTP open standard.
 This package contains only the files necessary for development.
 
 %prep
-%setup -n vitamtp-%{version}
+%autosetup -n vitamtp-%{version}
 
 %build
+%global _lto_cflags %{?_lto_cflags} -ffat-lto-objects
+export CFLAGS="%{optflags}"
+export CXXFLAGS="$CFLAGS"
 ./autogen.sh
 %configure
-make %{?_smp_mflags}
+%make_build
 
 %install
-%makeinstall
-rm -rf %{buildroot}/%{_libdir}/*.la
-mkdir -p %{buildroot}/usr/lib/udev/rules.d
-cp debian/libvitamtp%{sonum}.udev %{buildroot}/usr/lib/udev/rules.d/60-psvita.rules
+%make_install
+rm -f %{buildroot}%{_libdir}/*.la
+install -Dm644 debian/libvitamtp%{sonum}.udev %{buildroot}%{_udevrulesdir}/60-psvita.rules
 
 %post -n %{name}%{sonum} -p /sbin/ldconfig
 %postun -n %{name}%{sonum} -p /sbin/ldconfig
 
 %files -n %{name}%{sonum}
 %defattr(-,root,root)
-%doc README.md ChangeLog COPYING
+%doc README.md ChangeLog
+%license COPYING
 %{_libdir}/lib*.so.*
 %{_udevrulesdir}/60-psvita.rules
 
 %files devel
 %defattr(-,root,root)
-%{_prefix}/include/vitamtp.h
+%{_includedir}/vitamtp.h
 %{_libdir}/libvitamtp.a
 %{_libdir}/libvitamtp.so
 %{_libdir}/pkgconfig/libvitamtp.pc
@@ -99,6 +104,6 @@ cp debian/libvitamtp%{sonum}.udev %{buildroot}/usr/lib/udev/rules.d/60-psvita.ru
 %changelog
 
 %pre -n %{name}%{sonum}
-getent group vitamtp >/dev/null ||  groupadd -r vitamtp
+getent group vitamtp >/dev/null || groupadd -r vitamtp
 echo "NOTE: To use qcma as normal user you have to add yourself into vitamtp group"
 exit 0

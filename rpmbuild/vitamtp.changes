@@ -1,0 +1,7 @@
+-------------------------------------------------------------------
+Sat Aug 29 19:30:00 UTC 2026 - codestation <codestation@megpoid.dev>
+
+- Update to version 2.5.11
+  * Refresh RPM and Debian packaging.
+  * Make autoreconf failures stop the bootstrap process.
+  * Keep Fedora and openSUSE dependencies in one portable spec.

@@ -1,46 +1,11 @@
 #!/bin/sh
-#set -e
+set -eu
 
-srcdir=`dirname $0`
+srcdir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$srcdir"
 
-ACLOCAL_FLAGS="-I ${srcdir}/m4 ${ACLOCAL_FLAGS}"
-
-fail() {
-    status=$?
-    echo "Last command failed with status $status in directory $(pwd)."
-    echo "Aborting"
-    exit $status
-}
-
-# Refresh GNU autotools toolchain: libtool
-echo "Removing libtool cruft"
-rm -f ltmain.sh config.guess config.sub
-echo "Running libtoolize"
-libtoolize --copy --force || fail
-
-# Refresh GNU autotools toolchain: aclocal autoheader
-echo "Removing aclocal cruft"
-rm -f aclocal.m4
-echo "Running aclocal $ACLOCAL_FLAGS"
-aclocal $ACLOCAL_FLAGS || fail
-echo "Removing autoheader cruft"
-rm -f config.h.in src/config.h.in
-echo "Running autoheader"
-autoheader || fail
-
-# Refresh GNU autotools toolchain: automake
-echo "Removing automake cruft"
-rm -f depcomp install-sh missing mkinstalldirs
-rm -f stamp-h*
-echo "Running automake"
-automake --add-missing --gnu || fail
-
-# Refresh GNU autotools toolchain: autoconf
-echo "Removing autoconf cruft"
-rm -f configure
-rm -rf autom4te*.cache/
-echo "Running autoconf"
-autoconf
-
-echo "Finished!"
-
+set -- -fiv -I m4
+if [ -d /usr/share/gettext/m4 ]; then
+    set -- "$@" -I /usr/share/gettext/m4
+fi
+exec autoreconf "$@"
