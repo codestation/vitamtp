@@ -11,9 +11,9 @@ if [ -z "$version" ] || [ -z "$obs_package" ]; then
     exit 2
 fi
 
-expected=$(sed -n 's/^AC_INIT(\[vitamtp\], \[\([^]]*\)\].*/\1/p' configure.ac)
+expected=$(sed -n 's/^project(VitaMTP VERSION \([^ ]*\).*/\1/p' CMakeLists.txt)
 if [ "$version" != "$expected" ]; then
-    echo "Version mismatch: configure.ac contains $expected" >&2
+    echo "Version mismatch: CMakeLists.txt contains $expected" >&2
     exit 1
 fi
 if ! git diff --quiet || ! git diff --cached --quiet; then

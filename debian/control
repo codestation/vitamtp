@@ -8,14 +8,10 @@ Vcs-Git: git://github.com/codestation/vitamtp.git
 Vcs-Browser: https://github.com/codestation/vitamtp
 Build-Depends:
  debhelper-compat (= 13),
- dh-autoreconf,
- autotools-dev,
- automake,
- libtool,
+ cmake (>= 3.21),
  pkg-config,
  libusb-1.0-0-dev,
- libxml2-dev,
- gettext
+ libxml2-dev
 
 Package: libvitamtp-dev
 Section: libdevel

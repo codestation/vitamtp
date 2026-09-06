@@ -13,12 +13,10 @@
 %if 0%{?fedora} || 0%{?centos}
 %define _pkgconfig pkgconfig
 %define _libusb libusbx-devel
-%define _gettext gettext-devel
 %define _shadow shadow-utils
 %else
 %define _pkgconfig pkg-config
 %define _libusb libusb-1_0-devel
-%define _gettext gettext-tools
 %define _shadow shadow
 %endif
 
@@ -35,8 +33,7 @@ Requires(pre):  %{_shadow}
 BuildRequires:  %{_pkgconfig}
 BuildRequires:  libxml2-devel
 BuildRequires:  %{_libusb}
-BuildRequires:  %{_gettext}
-BuildRequires:  libtool
+BuildRequires:  cmake >= 3.21
 
 %description
 libvitamtp is a library based off of libmtp that does low level USB
@@ -75,13 +72,11 @@ This package contains only the files necessary for development.
 %global _lto_cflags %{?_lto_cflags} -ffat-lto-objects
 export CFLAGS="%{optflags}"
 export CXXFLAGS="$CFLAGS"
-./autogen.sh
-%configure
-%make_build
+%cmake -DBUILD_TESTING=OFF
+%cmake_build
 
 %install
-%make_install
-rm -f %{buildroot}%{_libdir}/*.la
+%cmake_install
 install -Dm644 debian/libvitamtp%{sonum}.udev %{buildroot}%{_udevrulesdir}/60-psvita.rules
 
 %post -n %{name}%{sonum} -p /sbin/ldconfig
@@ -100,6 +95,7 @@ install -Dm644 debian/libvitamtp%{sonum}.udev %{buildroot}%{_udevrulesdir}/60-ps
 %{_libdir}/libvitamtp.a
 %{_libdir}/libvitamtp.so
 %{_libdir}/pkgconfig/libvitamtp.pc
+%{_libdir}/cmake/VitaMTP/*
 
 %changelog
 

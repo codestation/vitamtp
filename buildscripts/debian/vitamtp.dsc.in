@@ -11,7 +11,7 @@ Vcs-Git: https://github.com/codestation/vitamtp.git
 DEBTRANSFORM-RELEASE: 1
 DEBTRANSFORM-TAR: vitamtp-2.5.11.tar.gz
 DEBTRANSFORM-FILES-TAR: debian.tar.xz
-Build-Depends: debhelper-compat (= 13), dh-autoreconf, automake, libtool, pkg-config, libusb-1.0-0-dev, libxml2-dev, gettext
+Build-Depends: debhelper-compat (= 13), cmake (>= 3.21), pkg-config, libusb-1.0-0-dev, libxml2-dev
 Package-List:
  libvitamtp-dev deb libdevel optional arch=any
  libvitamtp5 deb libs optional arch=any

@@ -17,15 +17,16 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <pthread.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "ptp.h"
 #include "vitamtp.h"
 #include "ptp_defines.h"
+#include "platform.h"
 
-int g_VitaMTP_logmask = VitaMTP_ERROR;
+static int vitamtp_logmask = VitaMTP_ERROR;
 
 volatile uint32_t g_register_cancel_id = 0;
 volatile uint32_t g_canceltask_event_id = 0;
@@ -34,8 +35,8 @@ volatile int g_canceltask_set = 0;
 volatile read_callback_t read_callback_func = NULL;
 volatile write_callback_t write_callback_func = NULL;
 
-pthread_mutex_t g_event_mutex;
-pthread_mutex_t g_cancel_mutex;
+vitamtp_mutex_t g_event_mutex;
+vitamtp_mutex_t g_cancel_mutex;
 
 /**
  * Set the logging level level.
@@ -50,7 +51,30 @@ pthread_mutex_t g_cancel_mutex;
  */
 void VitaMTP_Set_Logging(int logmask)
 {
-    g_VitaMTP_logmask = logmask;
+    vitamtp_logmask = logmask;
+}
+
+int VitaMTP_Log_Enabled(int mask)
+{
+    return MASK_SET(vitamtp_logmask, mask);
+}
+
+void VitaMTP_Log_Message(int mask, const char *function, int line,
+                         const char *format, ...)
+{
+    va_list args;
+
+    if (!VitaMTP_Log_Enabled(mask))
+        return;
+
+    if (mask == VitaMTP_DEBUG)
+        fprintf(stderr, "VitaMTP %s[%d]: ", function, line);
+    else
+        fprintf(stderr, "VitaMTP: ");
+
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
 }
 
 extern void VitaMTP_Data_Init(void);
@@ -60,7 +84,7 @@ extern int VitaMTP_USB_Init(void);
 extern void VitaMTP_USB_Exit(void);
 
 // since we don't have access to private fields
-extern inline PTPParams *VitaMTP_Get_PTP_Params(vita_device_t *device);
+extern PTPParams *VitaMTP_Get_PTP_Params(vita_device_t *device);
 
 /**
  * Called during initialization to get Vita information.
@@ -96,7 +120,7 @@ uint16_t VitaMTP_GetVitaInfo(vita_device_t *device, vita_info_t *info)
     unsigned char* nulpos = (unsigned char*) memchr(headerless_data, '\0', headerless_len);
     unsigned int xml_len = nulpos ? nulpos - headerless_data : headerless_len;
 
-    if (VitaMTP_Data_Info_From_XML(info, headerless_data, xml_len) != 0)
+    if (VitaMTP_Data_Info_From_XML(info, (const char *)headerless_data, xml_len) != 0)
     {
         return PTP_RC_GeneralError;
     }
@@ -376,7 +400,7 @@ uint16_t VitaMTP_GetSettingInfo(vita_device_t *device, uint32_t event_id, settin
     unsigned char* nulpos = (unsigned char*) memchr(headerless_data, '\0', headerless_len);
     unsigned int xml_len = nulpos ? nulpos - headerless_data : headerless_len;
     
-    if (VitaMTP_Data_Settings_From_XML(p_info, headerless_data, xml_len) != 0)
+    if (VitaMTP_Data_Settings_From_XML(p_info, (const char *)headerless_data, xml_len) != 0)
     {
         return PTP_RC_GeneralError;
     }
@@ -618,7 +642,6 @@ uint16_t VitaMTP_GetTreatObject(vita_device_t *device, uint32_t event_id, treat_
 uint16_t VitaMTP_SendCopyConfirmationInfoInit(vita_device_t *device, uint32_t event_id,
         copy_confirmation_info_t **p_info)
 {
-    unsigned char *data = NULL;
     uint16_t ret = VitaMTP_GetData(device, event_id, PTP_OC_VITA_SendCopyConfirmationInfoInit, (unsigned char **)p_info, NULL);
     LE32TOH((*p_info)->count);
     uint32_t i;
@@ -690,12 +713,12 @@ uint16_t VitaMTP_CancelTask(vita_device_t *device, uint32_t cancel_event_id)
 {
     uint16_t ret = PTP_RC_OK;
 
-    pthread_mutex_lock(&g_event_mutex);
+    vitamtp_mutex_lock(&g_event_mutex);
     g_canceltask_event_id = cancel_event_id;
     g_canceltask_set = 1;
-    pthread_mutex_unlock(&g_event_mutex);
+    vitamtp_mutex_unlock(&g_event_mutex);
 
-    pthread_mutex_lock(&g_cancel_mutex);
+    vitamtp_mutex_lock(&g_cancel_mutex);
     if(g_event_cancelled)
     {
         PTPContainer resp;
@@ -716,7 +739,7 @@ uint16_t VitaMTP_CancelTask(vita_device_t *device, uint32_t cancel_event_id)
         ret = PTP_ERROR_CANCEL;
     }
     g_canceltask_set = 0;
-    pthread_mutex_unlock(&g_cancel_mutex);
+    vitamtp_mutex_unlock(&g_cancel_mutex);
     return ret;
 }
 
@@ -761,7 +784,7 @@ uint16_t VitaMTP_SendObject(vita_device_t *device, uint32_t *p_parenthandle, uin
     objectinfo.ParentObject = *p_parenthandle;
     objectinfo.Filename = meta->name;
 
-    pthread_mutex_lock(&g_cancel_mutex);
+    vitamtp_mutex_lock(&g_cancel_mutex);
 
     if (meta->dataType & Folder)
     {
@@ -796,7 +819,7 @@ uint16_t VitaMTP_SendObject(vita_device_t *device, uint32_t *p_parenthandle, uin
         ret = PTP_RC_OperationNotSupported;
     }
 
-    pthread_mutex_unlock(&g_cancel_mutex);
+    vitamtp_mutex_unlock(&g_cancel_mutex);
 
     return ret;
 }
@@ -813,7 +836,7 @@ uint16_t VitaMTP_SendObject_Callback(vita_device_t *device, uint32_t *p_parentha
     objectinfo.ParentObject = *p_parenthandle;
     objectinfo.Filename = meta->name;
 
-    pthread_mutex_lock(&g_cancel_mutex);
+    vitamtp_mutex_lock(&g_cancel_mutex);
 
     if (meta->dataType & Folder)
     {
@@ -850,7 +873,7 @@ uint16_t VitaMTP_SendObject_Callback(vita_device_t *device, uint32_t *p_parentha
         ret = PTP_RC_OperationNotSupported;
     }
 
-    pthread_mutex_unlock(&g_cancel_mutex);
+    vitamtp_mutex_unlock(&g_cancel_mutex);
 
     return ret;
 }
@@ -1062,7 +1085,7 @@ uint16_t VitaMTP_GetVitaCapabilityInfo(vita_device_t *device, capability_info_t 
     unsigned char* nulpos = (unsigned char*) memchr(headerless_data, '\0', headerless_len);
     unsigned int xml_len = nulpos ? nulpos - headerless_data : headerless_len;
 
-    if (VitaMTP_Data_Capability_From_XML(p_info, headerless_data, xml_len) != 0) // strip header
+    if (VitaMTP_Data_Capability_From_XML(p_info, (const char *)headerless_data, xml_len) != 0) // strip header
     {
         return PTP_RC_GeneralError;
     }
@@ -1109,8 +1132,8 @@ void VitaMTP_RegisterCancelEventId(uint32_t event_id)
 int VitaMTP_Init(void)
 {
     VitaMTP_Data_Init();
-    pthread_mutex_init(&g_event_mutex, NULL);
-    pthread_mutex_init(&g_cancel_mutex, NULL);
+    vitamtp_mutex_init(&g_event_mutex);
+    vitamtp_mutex_init(&g_cancel_mutex);
     return 0;
 }
 
@@ -1119,7 +1142,7 @@ int VitaMTP_Init(void)
  */
 void VitaMTP_Cleanup(void)
 {
-    pthread_mutex_destroy(&g_event_mutex);
-    pthread_mutex_destroy(&g_cancel_mutex);
+    vitamtp_mutex_destroy(&g_event_mutex);
+    vitamtp_mutex_destroy(&g_cancel_mutex);
     VitaMTP_Data_Cleanup();
 }

@@ -27,9 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <pthread.h>
 #include "ptp.h"
 #include "vitamtp.h"
+#include "platform.h"
 
 #ifndef _WIN32
 #include <arpa/inet.h>
@@ -89,7 +89,6 @@ enum broadcast_command
     BroadcastStop
 };
 
-extern int g_VitaMTP_logmask;
 static SOCKET g_broadcast_command_fds[] = {INVALID_SOCKET, INVALID_SOCKET};
 
 extern volatile uint32_t g_register_cancel_id;
@@ -98,7 +97,7 @@ extern volatile int g_event_cancelled;
 extern volatile int g_canceltask_set;
 
 static SOCKET g_cancel_fds[2] = {INVALID_SOCKET, INVALID_SOCKET};
-extern pthread_mutex_t g_event_mutex;
+extern vitamtp_mutex_t g_event_mutex;
 extern read_callback_t read_callback_func;
 extern read_callback_t write_callback_func;
 
@@ -176,18 +175,23 @@ ptp_ptpip_sendreq(PTPParams *params, PTPContainer *req)
     {
     case 5:
         htod32a(&request[ptpip_cmd_param5],req->Param5);
+        /* fall through */
 
     case 4:
         htod32a(&request[ptpip_cmd_param4],req->Param4);
+        /* fall through */
 
     case 3:
         htod32a(&request[ptpip_cmd_param3],req->Param3);
+        /* fall through */
 
     case 2:
         htod32a(&request[ptpip_cmd_param2],req->Param2);
+        /* fall through */
 
     case 1:
         htod32a(&request[ptpip_cmd_param1],req->Param1);
+        /* fall through */
 
     case 0:
     default:
@@ -196,7 +200,7 @@ ptp_ptpip_sendreq(PTPParams *params, PTPContainer *req)
 
     VitaMTP_Log(VitaMTP_DEBUG, "ptpip/oprequest\n");
 
-    if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+    if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
     {
         VitaMTP_hex_dump(request, len, 16);
     }
@@ -217,7 +221,7 @@ ptp_ptpip_sendreq(PTPParams *params, PTPContainer *req)
 }
 
 static uint16_t
-ptp_ptpip_generic_read(PTPParams *params, int fd, PTPIPHeader *hdr, unsigned char **data)
+ptp_ptpip_generic_read(PTPParams *params, SOCKET fd, PTPIPHeader *hdr, unsigned char **data)
 {
     ssize_t ret;
     int len, curread;
@@ -239,7 +243,7 @@ ptp_ptpip_generic_read(PTPParams *params, int fd, PTPIPHeader *hdr, unsigned cha
 
         VitaMTP_Log(VitaMTP_DEBUG, "ptpip/generic_read\n");
 
-        if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+        if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
         {
             VitaMTP_hex_dump(xhdr+curread, (unsigned int)ret, 16);
         }
@@ -286,7 +290,7 @@ ptp_ptpip_generic_read(PTPParams *params, int fd, PTPIPHeader *hdr, unsigned cha
         {
             VitaMTP_Log(VitaMTP_DEBUG, "ptpip/generic_read\n");
 
-            if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+            if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
             {
                 VitaMTP_hex_dump(((*data)+curread), (unsigned int)ret, 16);
             }
@@ -346,7 +350,7 @@ ptp_ptpip_senddata(PTPParams *params, PTPContainer *ptp,
     htod32a(&request[ptpip_startdata_unknown  + 8],0);
     VitaMTP_Log(VitaMTP_DEBUG, "ptpip/senddata\n");
 
-    if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+    if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
     {
         VitaMTP_hex_dump(request, sizeof(request), 16);
     }
@@ -408,7 +412,7 @@ ptp_ptpip_senddata(PTPParams *params, PTPContainer *ptp,
         htod32a(&xdata[ptpip_data_transid+8], ptp->Transaction_ID);
         VitaMTP_Log(VitaMTP_DEBUG, "ptpip/senddata\n");
 
-        if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+        if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
         {
             VitaMTP_hex_dump(xdata, (unsigned int)towrite2, 16);
         }
@@ -428,7 +432,7 @@ ptp_ptpip_senddata(PTPParams *params, PTPContainer *ptp,
 
             written += ret;
 
-            pthread_mutex_lock(&g_event_mutex);
+            vitamtp_mutex_lock(&g_event_mutex);
             if(g_canceltask_set)
             {
                 if(g_canceltask_event_id == g_register_cancel_id)
@@ -436,11 +440,11 @@ ptp_ptpip_senddata(PTPParams *params, PTPContainer *ptp,
                     g_event_cancelled = 1;
                     VitaMTP_Log(VitaMTP_VERBOSE, "Event with ID %d cancelled by device\n", g_register_cancel_id);
                     free(xdata);
-                    pthread_mutex_unlock(&g_event_mutex);
+                    vitamtp_mutex_unlock(&g_event_mutex);
                     return PTP_ERROR_CANCEL;
                 }
             }
-            pthread_mutex_unlock(&g_event_mutex);
+            vitamtp_mutex_unlock(&g_event_mutex);
         }
 
         curwrite += towrite;
@@ -593,18 +597,23 @@ ptp_ptpip_getresp(PTPParams *params, PTPContainer *resp)
     {
     case 5:
         resp->Param5 = dtoh32a(&data[ptpip_resp_param5]);
+        /* fall through */
 
     case 4:
         resp->Param4 = dtoh32a(&data[ptpip_resp_param4]);
+        /* fall through */
 
     case 3:
         resp->Param3 = dtoh32a(&data[ptpip_resp_param3]);
+        /* fall through */
 
     case 2:
         resp->Param2 = dtoh32a(&data[ptpip_resp_param2]);
+        /* fall through */
 
     case 1:
         resp->Param1 = dtoh32a(&data[ptpip_resp_param1]);
+        /* fall through */
 
     case 0:
         break;
@@ -640,7 +649,7 @@ ptp_ptpip_init_command_request(PTPParams *params)
 
     VitaMTP_Log(VitaMTP_DEBUG, "ptpip/init_cmd received\n");
 
-    if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+    if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
     {
         VitaMTP_hex_dump(cmdrequest, len, 16);
     }
@@ -706,7 +715,7 @@ ptp_ptpip_init_event_request(PTPParams *params)
 
     VitaMTP_Log(VitaMTP_DEBUG, "ptpip/init_event received\n");
 
-    if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+    if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
     {
         VitaMTP_hex_dump(evtrequest, ptpip_eventinit_size, 16);
     }
@@ -781,7 +790,7 @@ ptp_ptpip_event(PTPParams *params, PTPContainer *event, int wait)
             timeout.tv_sec = 0;
             timeout.tv_usec = 1;
 
-            if (1 != select(params->evtfd+1, &infds, NULL, NULL, &timeout))
+            if (1 != select((int)params->evtfd+1, &infds, NULL, NULL, &timeout))
                 return PTP_RC_OK;
         }
 
@@ -809,12 +818,15 @@ ptp_ptpip_event(PTPParams *params, PTPContainer *event, int wait)
     {
     case 3:
         event->Param3 = dtoh32a(&data[ptpip_event_param3]);
+        /* fall through */
 
     case 2:
         event->Param2 = dtoh32a(&data[ptpip_event_param2]);
+        /* fall through */
 
     case 1:
         event->Param1 = dtoh32a(&data[ptpip_event_param1]);
+        /* fall through */
 
     case 0:
         break;
@@ -934,7 +946,7 @@ VitaMTP_PTPIP_Connect(PTPParams *params, struct sockaddr_in *saddr, int port)
 
 // end code from ptpip.c
 
-static inline int VitaMTP_Set_Socket_Blocking(int sock, int block)
+static inline int VitaMTP_Set_Socket_Blocking(SOCKET sock, int block)
 {
 #ifdef _WIN32
     unsigned long mode = block ? 0 : 1;
@@ -1003,7 +1015,7 @@ static int VitaMTP_Data_Connect(vita_device_t *device)
     return 0;
 }
 
-static int VitaMTP_Sock_Read_All(int sockfd, unsigned char **p_data, size_t *p_len, struct sockaddr *src_addr,
+static int VitaMTP_Sock_Read_All(SOCKET sockfd, unsigned char **p_data, size_t *p_len, struct sockaddr *src_addr,
                                  socklen_t *addrlen)
 {
     unsigned char buffer[REQUEST_BUFFER_SIZE];
@@ -1051,7 +1063,7 @@ static int VitaMTP_Sock_Read_All(int sockfd, unsigned char **p_data, size_t *p_l
 
         VitaMTP_Log(VitaMTP_DEBUG, "Received %d bytes from socket %d\n", (unsigned int)clen, sockfd);
 
-        if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+        if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
         {
             VitaMTP_hex_dump(buffer, (unsigned int)clen, 16);
         }
@@ -1068,7 +1080,7 @@ static int VitaMTP_Sock_Read_All(int sockfd, unsigned char **p_data, size_t *p_l
     return 0;
 }
 
-static int VitaMTP_Sock_Write_All(int sockfd, const unsigned char *data, ssize_t len, const struct sockaddr *dest_addr,
+static int VitaMTP_Sock_Write_All(SOCKET sockfd, const unsigned char *data, ssize_t len, const struct sockaddr *dest_addr,
                                   socklen_t addrlen)
 {
     while (1)
@@ -1091,7 +1103,7 @@ static int VitaMTP_Sock_Write_All(int sockfd, const unsigned char *data, ssize_t
 
     VitaMTP_Log(VitaMTP_DEBUG, "Sent %d bytes to socket %d\n", (unsigned int)len, sockfd);
 
-    if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+    if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
     {
         VitaMTP_hex_dump(data, (unsigned int)len, 16);
     }
@@ -1120,7 +1132,7 @@ int VitaMTP_Broadcast_Host(wireless_host_info_t *info, unsigned int host_addr)
         return -1;
     }
 
-    int sock;
+    SOCKET sock;
     struct sockaddr_in si_host;
     struct sockaddr_in si_client;
     unsigned int slen = sizeof(si_client);
@@ -1401,7 +1413,11 @@ static int VitaMTP_Get_Wireless_Device(wireless_host_info_t *info, vita_device_t
     int pin = -1;
     int listen = 1;
     memset(device, 0, sizeof(vita_device_t));
+#ifdef _WIN32
+    int max_fds = 0; /* Winsock ignores select's first argument. */
+#else
     int max_fds = s_sock > g_cancel_fds[0] ? s_sock : g_cancel_fds[0];
+#endif
     VitaMTP_Log(VitaMTP_VERBOSE, "waiting for connection\n");
 
     while (listen)
@@ -1466,7 +1482,7 @@ static int VitaMTP_Get_Wireless_Device(wireless_host_info_t *info, vita_device_t
                 break; // connection closed
             }
 
-            if (sscanf(data, "%20s * HTTP/1.1\r\n%n", method, &read) < 1)
+            if (sscanf(data, "%19s * HTTP/1.1\r\n%n", method, &read) < 1)
             {
                 VitaMTP_Log(VitaMTP_ERROR, "Device request malformed: %.*s\n", (int)len, data);
                 listen = 0;

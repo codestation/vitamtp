@@ -28,6 +28,7 @@
 #include <libxml/xmlwriter.h>
 #include <time.h>
 #include "vitamtp.h"
+#include "platform.h"
 
 #ifdef _WIN32
 #include "asprintf.h"
@@ -35,7 +36,6 @@
 
 #include "gphoto2-endian.h"
 
-extern int g_VitaMTP_logmask;
 
 /**
  * Takes raw data and inserts the size of it as the first 4 bytes.
@@ -72,9 +72,10 @@ char *VitaMTP_Data_Make_Timestamp(time_t time)
     int h = abs(diff / 3600);
     int m = abs((diff / 3600 * 3600 - diff) / 60);
     struct tm *tmlocal = localtime(&tlocal); // get local time
-    char *str = (char *)malloc(sizeof("0000-00-00T00:00:00+00:00")+1);
-    sprintf(str, "%04d-%02d-%02dT%02d:%02d:%02d%s%02d:%02d", tmlocal->tm_year+1900, tmlocal->tm_mon+1, tmlocal->tm_mday,
-            tmlocal->tm_hour, tmlocal->tm_min, tmlocal->tm_sec, diff<0?"-":"+", h, m);
+    char *str = NULL;
+    if (asprintf(&str, "%04d-%02d-%02dT%02d:%02d:%02d%s%02d:%02d", tmlocal->tm_year+1900, tmlocal->tm_mon+1, tmlocal->tm_mday,
+            tmlocal->tm_hour, tmlocal->tm_min, tmlocal->tm_sec, diff<0?"-":"+", h, m) < 0)
+        return NULL;
     return str;
 }
 
@@ -582,8 +583,8 @@ int VitaMTP_Data_Metadata_To_XML(const metadata_t *p_metadata, char **data, int 
     }
 
     xmlFreeTextWriter(writer);
-    *data = VitaMTP_Data_Add_Size_Header((char *)buf->content, (uint32_t)buf->use + 1);
-    *len = buf->use + sizeof(uint32_t) + 1;
+    *data = VitaMTP_Data_Add_Size_Header((const char *)xmlBufferContent(buf), (uint32_t)xmlBufferLength(buf) + 1);
+    *len = xmlBufferLength(buf) + sizeof(uint32_t) + 1;
     xmlBufferFree(buf);
     return 0;
 }

@@ -40,9 +40,10 @@ int asprintf(char **strp, const char *fmt, ...)
         goto end;
     }
 
-    len = vsnprintf(*strp, len, fmt, va_bak);
+    len = vsnprintf(*strp, (size_t)len + 1, fmt, va_bak);
 
 end:
+    va_end(va_bak);
     va_end(va);
     return len;
 }

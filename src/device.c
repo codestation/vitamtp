@@ -18,18 +18,17 @@
 //
 
 #include <memory.h>
-#include <pthread.h>
 #include <stdio.h>
 #include "ptp.h"
 #include "vitamtp.h"
 #include "ptp_defines.h"
+#include "platform.h"
 
-extern int g_VitaMTP_logmask;
 
 extern volatile uint32_t g_register_cancel_id;
 
-extern pthread_mutex_t g_event_mutex;
-extern pthread_mutex_t g_cancel_mutex;
+extern vitamtp_mutex_t g_event_mutex;
+extern vitamtp_mutex_t g_cancel_mutex;
 
 extern read_callback_t read_callback_func;
 
@@ -52,6 +51,18 @@ void ptp_nikon_getptpipguid(unsigned char *guid)
 #ifndef PTP_USB_SUPPORT
 
 int VitaMTP_USB_Init(void)
+{
+    VitaMTP_Log(VitaMTP_ERROR, "USB is unsupported\n");
+    return -1;
+}
+
+int VitaMTP_USB_Clear(vita_device_t *device)
+{
+    VitaMTP_Log(VitaMTP_ERROR, "USB is unsupported\n");
+    return -1;
+}
+
+int VitaMTP_USB_Reset(vita_device_t *device)
 {
     VitaMTP_Log(VitaMTP_ERROR, "USB is unsupported\n");
     return -1;
@@ -109,8 +120,9 @@ void VitaMTP_Release_Wireless_Device(vita_device_t *device)
     VitaMTP_Log(VitaMTP_ERROR, "wireless is unsupported\n");
 }
 
-vita_device_t *VitaMTP_Get_First_Wireless_Vita(wireless_host_info_t *info, unsigned int host_addr, int timeout,
-        device_registered_callback_t is_registered, register_device_callback_t create_register_pin)
+vita_device_t *VitaMTP_Get_First_Wireless_Vita(wireless_host_info_t *info, unsigned int host_addr,
+        device_registered_callback_t is_registered, register_device_callback_t create_register_pin,
+        device_reg_complete_callback_t reg_complete)
 {
     VitaMTP_Log(VitaMTP_ERROR, "wireless is unsupported\n");
     return NULL;
@@ -120,6 +132,11 @@ int VitaMTP_Get_Device_IP(vita_device_t *device)
 {
     VitaMTP_Log(VitaMTP_ERROR, "wireless is unsupported\n");
     return -1;
+}
+
+void VitaMTP_Cancel_Get_Wireless_Vita(void)
+{
+    VitaMTP_Log(VitaMTP_ERROR, "wireless is unsupported\n");
 }
 #endif
 
@@ -302,9 +319,9 @@ uint16_t VitaMTP_SendData(vita_device_t *device, uint32_t event_id, uint32_t cod
     ptp.Param1 = event_id;
 
     g_register_cancel_id = event_id;
-    pthread_mutex_lock(&g_cancel_mutex);
+    vitamtp_mutex_lock(&g_cancel_mutex);
     uint16_t ret = ptp_transaction(params, &ptp, PTP_DP_SENDDATA, len, &data, 0);
-    pthread_mutex_unlock(&g_cancel_mutex);
+    vitamtp_mutex_unlock(&g_cancel_mutex);
     return ret;
 }
 
@@ -320,14 +337,14 @@ uint16_t VitaMTP_SendData_Callback(vita_device_t *device, uint32_t event_id, uin
     ptp.Param1 = event_id;
 
     g_register_cancel_id = event_id;
-    pthread_mutex_lock(&g_cancel_mutex);
+    vitamtp_mutex_lock(&g_cancel_mutex);
 
     unsigned char *dummy = NULL;
     read_callback_func = read_callback;
     uint16_t ret = ptp_transaction(params, &ptp, PTP_DP_SENDDATA, len, &dummy, 0);
     read_callback_func = NULL;
 
-    pthread_mutex_unlock(&g_cancel_mutex);
+    vitamtp_mutex_unlock(&g_cancel_mutex);
     return ret;
 }
 

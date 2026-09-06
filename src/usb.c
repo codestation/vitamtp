@@ -21,13 +21,13 @@
 #define _GNU_SOURCE
 #include "config.h"
 #include <iconv.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "gphoto2-endian.h"
 #include "ptp.h"
 #include "vitamtp.h"
+#include "platform.h"
 
 #include "ptp-pack.c"
 
@@ -58,14 +58,13 @@ struct vita_device
 
 static libusb_context *g_usb_context = NULL;
 
-extern int g_VitaMTP_logmask;
 
 extern volatile uint32_t g_register_cancel_id;
 extern volatile uint32_t g_canceltask_event_id ;
 extern volatile int g_event_cancelled;
 extern volatile int g_canceltask_set;
 
-extern pthread_mutex_t g_event_mutex;
+extern vitamtp_mutex_t g_event_mutex;
 extern read_callback_t read_callback_func;
 extern write_callback_t write_callback_func;
 
@@ -193,7 +192,7 @@ ptp_read_func(
 
         if (xread == 0)
             VitaMTP_Log(VitaMTP_DEBUG, "Zero Read\n");
-        else if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG))
+        else if (VitaMTP_Log_Enabled(VitaMTP_DEBUG))
             VitaMTP_hex_dump(bytes, xread, 16);
 
         // want to discard extra byte
@@ -351,7 +350,7 @@ ptp_write_func(
                 return PTP_ERROR_IO;
             }
 
-            if (MASK_SET(g_VitaMTP_logmask, VitaMTP_DEBUG)) VitaMTP_hex_dump(bytes+usbwritten, xwritten, 16);
+            if (VitaMTP_Log_Enabled(VitaMTP_DEBUG)) VitaMTP_hex_dump(bytes+usbwritten, xwritten, 16);
 
             // check for result == 0 perhaps too.
             // Increase counters
@@ -684,18 +683,18 @@ ptp_usb_senddata(PTPParams *params, PTPContainer *ptp,
     if (ret != PTP_RC_OK && ret != PTP_ERROR_CANCEL)
         ret = PTP_ERROR_IO;
 
-    pthread_mutex_lock(&g_event_mutex);
+    vitamtp_mutex_lock(&g_event_mutex);
     if(g_canceltask_set)
     {
         if(g_canceltask_event_id == g_register_cancel_id)
         {
             g_event_cancelled = 1;
             VitaMTP_Log(VitaMTP_VERBOSE, "Event with ID %d cancelled by device (1)\n", g_register_cancel_id);
-            pthread_mutex_unlock(&g_event_mutex);
+            vitamtp_mutex_unlock(&g_event_mutex);
             return PTP_ERROR_CANCEL;
         }
     }
-    pthread_mutex_unlock(&g_event_mutex);
+    vitamtp_mutex_unlock(&g_event_mutex);
 
     return ret;
 }

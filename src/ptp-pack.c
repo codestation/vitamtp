@@ -1996,8 +1996,8 @@ ptp_unpack_CANON_changes (PTPParams *params, unsigned char* data, int datasize, 
 					break;
 				}
 
-				break;
-		}
+			}
+			break;
 		/* one more information record handed to us */
 		case PTP_EC_CANON_EOS_OLCInfoChanged: {
 			uint32_t		len, curoff;
@@ -2401,11 +2401,11 @@ ptp_unpack_canon_directory (
 	for (i=0;i<cnt;i++)
 		if (ISOBJECT(dir+i*0x4c)) nrofobs++;
 	handles->n = nrofobs;
-	handles->Handler = calloc(sizeof(handles->Handler[0]),nrofobs);
+	handles->Handler = calloc(nrofobs,sizeof(handles->Handler[0]));
 	if (!handles->Handler) return PTP_RC_GeneralError;
-	*oinfos = calloc(sizeof((*oinfos)[0]),nrofobs);
+	*oinfos = calloc(nrofobs,sizeof((*oinfos)[0]));
 	if (!*oinfos) return PTP_RC_GeneralError;
-	*flags  = calloc(sizeof((*flags)[0]),nrofobs);
+	*flags  = calloc(nrofobs,sizeof((*flags)[0]));
 	if (!*flags) return PTP_RC_GeneralError;
 
 	/* Migrate data into objects ids, handles into

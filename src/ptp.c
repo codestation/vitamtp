@@ -35,7 +35,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 #ifdef ENABLE_NLS
 #  include <libintl.h>
@@ -2603,12 +2607,12 @@ ptp_canon_eos_setdevicepropvalue (PTPParams* params,
 		break;
 	default:
 		if (datatype != PTP_DTC_STR) {
-			data = calloc(sizeof(uint32_t),3);
+			data = calloc(3,sizeof(uint32_t));
 			if (!data) return PTP_RC_GeneralError;
 			size = sizeof(uint32_t)*3;
 		} else {
 			size = strlen(value->str) + 1 + 8;
-			data = calloc(sizeof(char),size);
+			data = calloc(size,sizeof(char));
 			if (!data) return PTP_RC_GeneralError;
 		}
 		switch (datatype) {
@@ -3449,13 +3453,15 @@ ptp_nikon_getwifiprofilelist (PTPParams* params)
 		params->wifi_profiles[profn].icon_type = data[pos++];
 
 		buffer = ptp_unpack_string(params, data, pos, &len);
-		strncpy(params->wifi_profiles[profn].creation_date, buffer, sizeof(params->wifi_profiles[profn].creation_date));
+		snprintf(params->wifi_profiles[profn].creation_date, sizeof(params->wifi_profiles[profn].creation_date),
+			 "%.*s", (int)sizeof(params->wifi_profiles[profn].creation_date) - 1, buffer ? buffer : "");
 		free (buffer);
 		pos += (len*2+1);
 		if (pos+1 >= size) return PTP_RC_Undefined;
 		/* FIXME: check if it is really last usage date */
 		buffer = ptp_unpack_string(params, data, pos, &len);
-		strncpy(params->wifi_profiles[profn].lastusage_date, buffer, sizeof(params->wifi_profiles[profn].lastusage_date));
+		snprintf(params->wifi_profiles[profn].lastusage_date, sizeof(params->wifi_profiles[profn].lastusage_date),
+			 "%.*s", (int)sizeof(params->wifi_profiles[profn].lastusage_date) - 1, buffer ? buffer : "");
 		free (buffer);
 		pos += (len*2+1);
 		if (pos+5 >= size) return PTP_RC_Undefined;
@@ -3537,8 +3543,8 @@ ptp_nikon_writewifiprofile (PTPParams* params, PTPNIKONWifiProfile* profile)
 	
 	/* Profile name */
 	htod32a(&buffer[0x01], 17);
-	/* 16 as third parameter, so there will always be a null-byte in the end */
-	strncpy((char*)&buffer[0x05], profile->profile_name, 16);
+	/* The wire field has 16 name bytes followed by a null terminator. */
+	snprintf((char*)&buffer[0x05], 17, "%.16s", profile->profile_name);
 	
 	buffer[0x16] = 0x00; /* Display order */
 	buffer[0x17] = profile->device_type;

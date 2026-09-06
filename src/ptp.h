@@ -23,6 +23,8 @@
 #ifndef __PTP_H__
 #define __PTP_H__
 
+#include "config.h"
+#include "platform.h"
 #include <stdarg.h>
 #include <time.h>
 #ifdef HAVE_ICONV
@@ -2284,12 +2286,12 @@ typedef uint16_t (* PTPIOCancelReq)	(PTPParams* params, uint32_t transaction_id)
 
 /* debug functions */
 typedef void (* PTPErrorFunc) (void *data, const char *format, va_list args)
-#if (__GNUC__ >= 3)
+#if defined(__GNUC__) && (__GNUC__ >= 3)
 	__attribute__((__format__(printf,2,0)))
 #endif
 ;
 typedef void (* PTPDebugFunc) (void *data, const char *format, va_list args)
-#if (__GNUC__ >= 3)
+#if defined(__GNUC__) && (__GNUC__ >= 3)
 	__attribute__((__format__(printf,2,0)))
 #endif
 ;
@@ -2390,7 +2392,7 @@ struct _PTPParams {
 	PTPNIKONWifiProfile *wifi_profiles;
 
 	/* IO: PTP/IP related data */
-	int		cmdfd, evtfd;
+	vitamtp_socket_t	cmdfd, evtfd;
 	uint8_t		cameraguid[16];
 	uint32_t	eventpipeid;
 	char		*cameraname;

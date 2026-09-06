@@ -10,7 +10,10 @@
 #export DH_VERBOSE=1
 
 %:
-	dh $@ --with autoreconf
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DVITAMTP_BUILD_DOCUMENTATION=OFF -DBUILD_TESTING=OFF
 
 override_dh_installudev:
 	dh_installudev --priority=60
