@@ -588,8 +588,8 @@ ptp_unpack_PTPTIME (const char *str) {
 		/*ptp_debug (params ,"datelen is less than 15 (%d)", ptpdatelen);*/
 		return 0;
 	}
-	strncpy (ptpdate, str, sizeof(ptpdate));
-	ptpdate[sizeof(ptpdate) - 1] = '\0';
+	memcpy (ptpdate, str, ptpdatelen);
+	ptpdate[ptpdatelen] = '\0';
 
 	memset(&tm,0,sizeof(tm));
 	strncpy (tmp, ptpdate, 4);

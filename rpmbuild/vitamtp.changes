@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Sun Sep 06 05:02:59 UTC 2026 - codestation <codestation@megpoid.dev>
+
+- Update to version 2.5.12
+  * Migrate the build system from Autotools to CMake.
+  * Improve portability, encapsulate logging and fix compiler warnings.
+  * Add library and installed-consumer tests.
+
+-------------------------------------------------------------------
 Sat Aug 29 19:30:00 UTC 2026 - codestation <codestation@megpoid.dev>
 
 - Update to version 2.5.11

@@ -1,3 +1,11 @@
+vitamtp (2.5.12) unstable; urgency=medium
+
+  * Migrate the build system from Autotools to CMake.
+  * Improve portability, encapsulate logging and fix compiler warnings.
+  * Add library and installed-consumer tests.
+
+ -- codestation <codestation@megpoid.dev>  Sun, 06 Sep 2026 00:02:59 -0500
+
 vitamtp (2.5.11) unstable; urgency=medium
 
   * Refresh RPM, Debian, Flatpak and AppImage packaging.

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(VitaMTP VERSION 2.5.11 LANGUAGES C)
+project(VitaMTP VERSION 2.5.12 LANGUAGES C)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
