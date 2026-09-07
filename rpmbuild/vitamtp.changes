@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Sep 07 05:06:40 UTC 2026 - codestation <codestation@megpoid.dev>
+
+- Update to version 2.5.13
+  * Handle allocation and formatting failures in data utilities.
+  * Modernize the PS Vita udev rule while retaining group-based access.
+
+-------------------------------------------------------------------
 Sun Sep 06 05:02:59 UTC 2026 - codestation <codestation@megpoid.dev>
 
 - Update to version 2.5.12

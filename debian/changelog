@@ -1,3 +1,10 @@
+vitamtp (2.5.13) unstable; urgency=medium
+
+  * Handle allocation and formatting failures in data utilities.
+  * Modernize the PS Vita udev rule while retaining group-based access.
+
+ -- codestation <codestation@megpoid.dev>  Mon, 07 Sep 2026 00:06:40 -0500
+
 vitamtp (2.5.12) unstable; urgency=medium
 
   * Migrate the build system from Autotools to CMake.

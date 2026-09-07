@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(VitaMTPConsumer C)
-find_package(VitaMTP 2.5.12 CONFIG REQUIRED)
+find_package(VitaMTP 2.5.13 CONFIG REQUIRED)
 add_executable(vitamtp_consumer main.c)
 option(CONSUME_STATIC "Link the installed static library" OFF)
 if(CONSUME_STATIC)

@@ -72,7 +72,7 @@ Installed consumers can use either CMake or pkg-config. CMake provides
 `VitaMTP::VitaMTP` and `VitaMTP::VitaMTPStatic`:
 
 ```cmake
-find_package(VitaMTP 2.5.12 CONFIG REQUIRED)
+find_package(VitaMTP 2.5.13 CONFIG REQUIRED)
 target_link_libraries(my_app PRIVATE VitaMTP::VitaMTP)
 ```
 
