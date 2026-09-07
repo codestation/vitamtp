@@ -245,7 +245,13 @@ const initiator_info_t *VitaMTP_Data_Initiator_New(const char *host_name, int pr
 {
     initiator_info_t *init_info = malloc(sizeof(initiator_info_t));
     char *version_str;
-    asprintf(&version_str, "%d.%d", VITAMTP_VERSION_MAJOR, VITAMTP_VERSION_MINOR);
+    if (init_info == NULL)
+        return NULL;
+    if (asprintf(&version_str, "%d.%d", VITAMTP_VERSION_MAJOR, VITAMTP_VERSION_MINOR) < 0)
+    {
+        free(init_info);
+        return NULL;
+    }
     init_info->platformType = strdup("PC");
     init_info->platformSubtype = strdup("Unknown");
     init_info->osVersion = strdup("0.0");
@@ -487,7 +493,13 @@ int VitaMTP_Data_Metadata_To_XML(const metadata_t *p_metadata, char **data, int 
             xmlTextWriterWriteFormatAttribute(writer, BAD_CAST "type", "%d", current->data.thumbnail.type);
             xmlTextWriterWriteFormatAttribute(writer, BAD_CAST "orientationType", "%d", current->data.thumbnail.orientationType);
             char *aspectRatio;
-            asprintf(&aspectRatio, "%.6f", current->data.thumbnail.aspectRatio);
+            if (asprintf(&aspectRatio, "%.6f", current->data.thumbnail.aspectRatio) < 0)
+            {
+                VitaMTP_Log(VitaMTP_ERROR, "VitaMTP_Data_Metadata_To_XML: Error formatting aspect ratio\n");
+                xmlFreeTextWriter(writer);
+                xmlBufferFree(buf);
+                return 1;
+            }
             char *period = strchr(aspectRatio, '.');
             if(period)
             {

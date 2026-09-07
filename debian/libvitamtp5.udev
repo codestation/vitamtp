@@ -1,1 +1,3 @@
-SUBSYSTEM=="usb", ATTR{product}=="*PS Vita* Type B", GROUP="vitamtp", MODE="0660", TAG+="uaccess", TAG+="udev-acl"
+# Retain the group fallback for headless and non-logind systems; uaccess grants
+# the active local session access through systemd-logind.
+SUBSYSTEM=="usb", ATTR{idVendor}=="054c", ATTR{idProduct}=="04e4", GROUP="vitamtp", MODE="0660", TAG+="uaccess"
